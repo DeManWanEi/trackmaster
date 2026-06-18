@@ -109,16 +109,13 @@ label {
 }
 
 .draft-grid {
-  display: flex;
-  gap: 14px;
-  justify-content: space-between;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding: 10px 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
 }
 
 .car-card {
-  min-width: 160px;
   background: #2a2a3a;
   border-radius: 12px;
   padding: 10px;

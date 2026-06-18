@@ -94,7 +94,7 @@ $_SESSION['ai_draft'] = array_map(fn($c) => [
             <label class="car-card">
                 <input type="radio" name="car" value="<?= $i ?>" required>
 
-                <img src="<?= $car['image'] ?>">
+                <img src="<?= $car['image']['src'] ?>">
 
                 <div><strong><?= $car['name'] ?></strong></div>
 
