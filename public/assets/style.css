@@ -1,0 +1,95 @@
+/* =========================
+   GENERAL
+========================= */
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #0f1115;
+  color: #e6e6e6;
+}
+
+/* =========================
+   HEADER
+========================= */
+h1,
+h2,
+h3 {
+  color: #ffffff;
+}
+
+/* =========================
+   CONTAINERS
+========================= */
+.container {
+  width: 900px;
+  margin: 30px auto;
+}
+
+.card {
+  background: #171a21;
+  border: 1px solid #2a2f3a;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+/* =========================
+   FORM ELEMENTS
+========================= */
+label {
+  display: block;
+  padding: 8px;
+  margin: 5px 0;
+  background: #1f2430;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+label:hover {
+  background: #2a3142;
+}
+
+input[type="radio"] {
+  margin-right: 10px;
+}
+
+button {
+  background: #4a7dff;
+  border: none;
+  padding: 10px 18px;
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+button:hover {
+  background: #365fd6;
+}
+
+/* =========================
+   INFO BOXES
+========================= */
+.info {
+  background: #121622;
+  border-left: 4px solid #4a7dff;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+}
+
+/* =========================
+   RESULTS
+========================= */
+.result {
+  padding: 8px;
+  border-bottom: 1px solid #2a2f3a;
+}
+
+/* =========================
+   SMALL TEXT
+========================= */
+small {
+  color: #9aa4b2;
+}
