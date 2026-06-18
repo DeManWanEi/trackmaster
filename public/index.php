@@ -1,13 +1,5 @@
 <?php
-
 session_start();
-
-require_once __DIR__ . '/../src/Data/CarsPool.php';
-require_once __DIR__ . '/../src/Data/TracksPool.php';
-
-$cars = getCars();
-$tracks = getTracks();
-
 ?>
 
 <!DOCTYPE html>
@@ -28,15 +20,24 @@ $tracks = getTracks();
 
     <input type="hidden" name="action" value="start">
 
-    <label>Dificultad:</label>
-    <select name="difficulty">
-        <option value="normal">Normal</option>
-        <option value="hard">Difícil</option>
-    </select>
+    <div class="difficulty-group">
 
-    <br><br>
+        <div class="difficulty-option">
+            <input type="radio" id="normal" name="difficulty" value="normal" checked>
+            <label for="normal">Normal</label>
+        </div>
 
-    <button>Empezar partida</button>
+        <div class="difficulty-option">
+            <input type="radio" id="hard" name="difficulty" value="hard">
+            <label for="hard">Difícil</label>
+        </div>
+
+    </div>
+
+    <div style="text-align:center;">
+        <button type="submit">Empezar partida</button>
+    </div>
+
 </form>
 
 </div>

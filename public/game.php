@@ -2,14 +2,13 @@
 
 session_start();
 
-require_once __DIR__ . '/../src/Data/CarsPool.php';
-require_once __DIR__ . '/../src/Data/TracksPool.php';
-require_once __DIR__ . '/../src/Core/Draft.php';
+require_once __DIR__ . '/../src/Data/CarsRepository.php';
+require_once __DIR__ . '/../src/Data/TracksRepository.php';
 require_once __DIR__ . '/../src/Core/Race.php';
 require_once __DIR__ . '/../src/Core/Simulator.php';
 
-$cars = getCars();
-$tracks = getTracks();
+$cars = CarsRepository::getCars();
+$tracks = TracksRepository::getTracks();
 
 $action = $_POST['action'] ?? null;
 
@@ -26,12 +25,15 @@ if (!$action) {
 if ($action === 'start') {
 
     $_SESSION['game'] = [
-        "difficulty" => $_POST['difficulty'],
+        "difficulty" => $_POST['difficulty'] ?? 'normal',
         "playerPoints" => 0,
         "aiPoints" => 0,
         "currentTrack" => 0,
         "lastResults" => []
     ];
+
+    // limpiar estado previo
+    unset($_SESSION['player_draft'], $_SESSION['ai_draft']);
 
     header("Location: /draft.php");
     exit;
@@ -44,7 +46,12 @@ if ($action === 'start') {
 */
 if ($action === 'run_race') {
 
-    $game = $_SESSION['game'];
+    $game = $_SESSION['game'] ?? null;
+
+    if (!$game) {
+        header("Location: /index.php");
+        exit;
+    }
 
     $trackIndex = $game['currentTrack'];
 
@@ -57,13 +64,21 @@ if ($action === 'run_race') {
 
     $playerCarIndex = (int)$_POST['car'];
 
-    $playerCar = $_SESSION['player_draft'][$playerCarIndex];
-    $aiCar = $_SESSION['ai_draft'][array_rand($_SESSION['ai_draft'])];
+    $playerCar = $_SESSION['player_draft'][$playerCarIndex] ?? null;
+    $aiCar = $_SESSION['ai_draft'][array_rand($_SESSION['ai_draft'] ?? [])] ?? null;
 
-    $allCars = getCars();
+    if (!$playerCar || !$aiCar) {
+        die("❌ Draft inválido");
+    }
+
+    $allCars = CarsRepository::getCars();
 
     $playerCarObj = findCar($allCars, $playerCar['name']);
     $aiCarObj = findCar($allCars, $aiCar['name']);
+
+    if (!$playerCarObj || !$aiCarObj) {
+        die("❌ Coche no encontrado");
+    }
 
     $race = new Race([$playerCarObj, $aiCarObj], $track, new Simulator());
 

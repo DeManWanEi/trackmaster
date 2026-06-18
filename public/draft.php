@@ -2,12 +2,12 @@
 
 session_start();
 
-require_once __DIR__ . '/../src/Data/CarsPool.php';
-require_once __DIR__ . '/../src/Data/TracksPool.php';
+require_once __DIR__ . '/../src/Data/CarsRepository.php';
+require_once __DIR__ . '/../src/Data/TracksRepository.php';
 require_once __DIR__ . '/../src/Core/Draft.php';
 
-$cars = getCars();
-$tracks = getTracks();
+$cars = CarsRepository::getCars();
+$tracks = TracksRepository::getTracks();
 
 $game = $_SESSION['game'] ?? null;
 
@@ -26,7 +26,7 @@ $track = $tracks[$currentTrack];
 
 /*
 |--------------------------------------------------------------------------
-| 🎲 GENERAR DRAFT PLAYER
+| GENERAR DRAFT PLAYER
 |--------------------------------------------------------------------------
 */
 $playerBrand = Draft::rollBrand($cars);
@@ -35,7 +35,7 @@ $playerDraft = Draft::getDraft($cars, $playerBrand, $playerDecade);
 
 /*
 |--------------------------------------------------------------------------
-| 🎲 GENERAR DRAFT IA
+| GENERAR DRAFT IA
 |--------------------------------------------------------------------------
 */
 do {
@@ -47,23 +47,22 @@ $aiDraft = Draft::getDraft($cars, $aiBrand, $aiDecade);
 
 /*
 |--------------------------------------------------------------------------
-| 💾 GUARDAR EN SESIÓN
+| GUARDAR EN SESIÓN
 |--------------------------------------------------------------------------
 */
 $_SESSION['player_draft'] = array_map(fn($c) => [
-    "name" => $c->name
+    "name" => $c->name,
+    "brand" => $c->brand,
+    "decade" => $c->decade,
+    "image" => $c->image ?? "/assets/cars/default.png"
 ], $playerDraft);
 
 $_SESSION['ai_draft'] = array_map(fn($c) => [
-    "name" => $c->name
+    "name" => $c->name,
+    "brand" => $c->brand,
+    "decade" => $c->decade,
+    "image" => $c->image ?? "/assets/cars/default.png"
 ], $aiDraft);
-
-$_SESSION['draft_context'] = [
-    "playerBrand" => $playerBrand,
-    "playerDecade" => $playerDecade,
-    "aiBrand" => $aiBrand,
-    "aiDecade" => $aiDecade
-];
 
 ?>
 
@@ -79,14 +78,8 @@ $_SESSION['draft_context'] = [
 
 <h1>🎮 Elige tu coche</h1>
 
-<div class="card info">
-    <strong>🏁 Circuito:</strong> <?= $track->name ?>
-</div>
-
-<div class="card info">
-    <strong>📦 Tu pool:</strong><br>
-    Marca: <?= $playerBrand ?><br>
-    Década: <?= $playerDecade ?>
+<div class="card">
+<strong>🏁 Circuito:</strong> <?= $track->name ?>
 </div>
 
 <div class="card">
@@ -94,15 +87,31 @@ $_SESSION['draft_context'] = [
 <form method="POST" action="/game.php">
     <input type="hidden" name="action" value="run_race">
 
-    <?php foreach ($_SESSION['player_draft'] as $i => $car): ?>
-        <label>
-            <input type="radio" name="car" value="<?= $i ?>" required>
-            <?= $car['name'] ?>
-        </label>
-    <?php endforeach; ?>
+    <div class="draft-grid">
 
-    <br><br>
-    <button>🏁 Correr carrera</button>
+        <?php foreach ($_SESSION['player_draft'] as $i => $car): ?>
+
+            <label class="car-card">
+                <input type="radio" name="car" value="<?= $i ?>" required>
+
+                <img src="<?= $car['image'] ?>">
+
+                <div><strong><?= $car['name'] ?></strong></div>
+
+                <div><?= $car['brand'] ?> · <?= $car['decade'] ?></div>
+
+            </label>
+
+        <?php endforeach; ?>
+
+    </div>
+
+    <br>
+
+    <div style="text-align:center;">
+        <button>🏁 Correr carrera</button>
+    </div>
+
 </form>
 
 </div>

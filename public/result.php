@@ -2,37 +2,35 @@
 
 session_start();
 
+require_once __DIR__ . '/../src/Data/TracksRepository.php';
+
 $game = $_SESSION['game'] ?? null;
 
 if (!$game) {
     die("❌ No hay partida activa");
 }
 
-require_once __DIR__ . '/../src/Data/TracksPool.php';
-$tracks = getTracks();
-
 $currentTrack = $game['currentTrack'] ?? 0;
+$tracks = TracksRepository::getTracks();
+
 $hasNext = isset($tracks[$currentTrack]);
 
 $end = $_GET['end'] ?? false;
 
 /*
-|--------------------------------------------------------------------------
-| ⏱ FORMATO DE TIEMPO
-|--------------------------------------------------------------------------
+|--------------------------------------
+| FORMAT TIME
+|--------------------------------------
 */
 function formatTime(float $time): string
 {
-    // normalizamos float a segundos totales enteros + decimales
     $totalSeconds = (int) floor($time);
 
     $minutes = intdiv($totalSeconds, 60);
     $seconds = $totalSeconds % 60;
 
-    // centésimas desde la parte decimal original
     $centiseconds = (int) round(($time - $totalSeconds) * 100);
 
-    // fix edge case: 100 centésimas = +1 segundo
     if ($centiseconds === 100) {
         $centiseconds = 0;
         $seconds++;
@@ -62,7 +60,7 @@ function formatTime(float $time): string
 
 <div class="container">
 
-<h1>🏁 Resultado</h1>
+<h1>Resultado</h1>
 
 <div class="card">
 
