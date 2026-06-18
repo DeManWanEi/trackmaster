@@ -3,116 +3,233 @@
 require_once __DIR__ . "/Draft.php";
 require_once __DIR__ . "/Race.php";
 
-class GameLoop {
-
+class GameLoop
+{
     private array $cars;
     private array $tracks;
     private Simulator $sim;
 
-    public function __construct(array $cars, array $tracks, Simulator $sim) {
+    private bool $debug = true;
+
+    public function __construct(array $cars, array $tracks, Simulator $sim)
+    {
         $this->cars = $cars;
         $this->tracks = $tracks;
         $this->sim = $sim;
     }
 
-    public function run() {
-
+    public function run(): void
+    {
         echo "=========================\n";
-        echo "🏁 GAME LOOP START\n";
+        echo "🏁 TRACKMASTER\n";
         echo "=========================\n\n";
 
-        $allCars = $this->cars;
+        $difficulty = $this->chooseDifficulty();
+
+        echo "\n🎚️ Dificultad: " . ($difficulty === "hard" ? "Difícil" : "Normal") . "\n\n";
+
+        $playerPoints = 0;
+        $aiPoints = 0;
 
         // =====================================================
-        // 🎮 DRAFT JUGADOR
+        // 🏁 CARRERAS
         // =====================================================
-        $playerBrand = Draft::rollBrand($allCars);
-        $playerDecade = Draft::rollDecade($allCars, $playerBrand);
-        $playerDraft = Draft::getDraft($allCars, $playerBrand, $playerDecade);
+        foreach ($this->tracks as $track) {
 
-        echo "🎮 TU DRAFT:\n";
-        echo "Marca: $playerBrand | Década: $playerDecade\n\n";
+            echo "=========================\n";
+            echo "🏁 PRUEBA: {$track->name}\n";
+            echo "=========================\n\n";
 
-        foreach ($playerDraft as $i => $car) {
-            echo ($i + 1) . ". {$car->name} (Tier {$car->tier})\n";
-        }
+            // =================================================
+            // 🎮 DRAFT JUGADOR (POR CARRERA)
+            // =================================================
+            $playerBrand = Draft::rollBrand($this->cars);
+            $playerDecade = Draft::rollDecade($this->cars, $playerBrand);
 
-        // 🎮 SELECCIÓN REAL DEL JUGADOR
-        $playerCar = $this->playerPick($playerDraft);
+            $playerDraft = Draft::getDraft(
+                $this->cars,
+                $playerBrand,
+                $playerDecade
+            );
 
-        echo "\n🎮 HAS ELEGIDO: {$playerCar->name}\n\n";
+            echo "🎮 TU DRAFT ({$playerBrand} - {$playerDecade})\n\n";
 
-        // =====================================================
-        // 🤖 DRAFT IA (TOTALMENTE DIFERENTE)
-        // =====================================================
+            foreach ($playerDraft as $i => $car) {
+                echo ($i + 1) . ". {$car->name}\n";
+            }
 
-        do {
-            $aiBrand = Draft::rollBrand($allCars);
-            $aiDecade = Draft::rollDecade($allCars, $aiBrand);
-        } while ($aiBrand === $playerBrand && $aiDecade === $playerDecade);
+            $playerCar = $this->playerPick($playerDraft);
 
-        $aiDraft = Draft::getDraft($allCars, $aiBrand, $aiDecade);
+            echo "\n🎮 ELIGES: {$playerCar->name}\n\n";
 
-        echo "🤖 DRAFT IA:\n";
-        echo "Marca: $aiBrand | Década: $aiDecade\n\n";
+            // =================================================
+            // 🤖 DRAFT IA (POR CARRERA, DIFERENTE)
+            // =================================================
+            do {
 
-        foreach ($aiDraft as $car) {
-            echo "- {$car->name}\n";
-        }
+                $aiBrand = Draft::rollBrand($this->cars);
+                $aiDecade = Draft::rollDecade($this->cars, $aiBrand);
 
-        // 🤖 IA elige el mejor coche del draft
-        $aiCar = $this->aiPick($aiDraft);
+            } while (
+                $aiBrand === $playerBrand &&
+                $aiDecade === $playerDecade
+            );
 
-        echo "\n🤖 IA ELIGE: {$aiCar->name}\n\n";
+            $aiDraft = Draft::getDraft(
+                $this->cars,
+                $aiBrand,
+                $aiDecade
+            );
 
-        // =====================================================
-        // 🏁 CARRERA
-        // =====================================================
+            if ($this->debug) {
 
-        $race = new Race([$playerCar, $aiCar], $this->tracks, $this->sim);
-        $race->run();
+                echo "🤖 IA DRAFT ({$aiBrand} - {$aiDecade})\n\n";
 
-        echo "\n=========================\n";
-        echo "🏁 GAME LOOP END\n";
-        echo "=========================\n";
-    }
+                foreach ($aiDraft as $i => $car) {
+                    echo ($i + 1) . ". {$car->name}\n";
+                }
 
-    // =========================================================
-    // 🎮 INPUT JUGADOR REAL
-    // =========================================================
-    private function playerPick(array $draft) {
+                echo "\n";
+            }
 
-        echo "\n👉 ELIGE TU COCHE (1-5): ";
+            $aiCar = $this->aiPick($aiDraft, $track, $difficulty);
 
-        $input = trim(fgets(STDIN));
-        $index = (int)$input - 1;
+            echo "🤖 IA ELIGE: {$aiCar->name}\n\n";
 
-        if (!isset($draft[$index])) {
-            echo "❌ Selección inválida, se elige aleatorio.\n";
-            return $draft[array_rand($draft)];
-        }
+            // =================================================
+            // 🏁 CARRERA
+            // =================================================
+            $race = new Race(
+                [$playerCar, $aiCar],
+                $track,
+                $this->sim
+            );
 
-        return $draft[$index];
-    }
+            $results = $race->run();
 
-    // =========================================================
-    // 🤖 IA SIMPLE (MEJOR COCHE DEL DRAFT)
-    // =========================================================
-    private function aiPick(array $draft) {
+            foreach ($results as $i => $result) {
 
-        $best = null;
-        $bestScore = -1;
+                echo ($i + 1) . ". ";
+                echo $result["car"]->name;
+                echo " → ";
+                echo $this->formatTime($result["time"]);
+                echo "\n";
+            }
 
-        foreach ($draft as $car) {
+            echo "\n";
 
-            $score = $car->getPowerScore();
-
-            if ($score > $bestScore) {
-                $bestScore = $score;
-                $best = $car;
+            if ($results[0]["car"] === $playerCar) {
+                echo "🏆 GANAS LA PRUEBA\n\n";
+                $playerPoints++;
+            } else {
+                echo "🤖 GANA LA IA\n\n";
+                $aiPoints++;
             }
         }
 
-        return $best;
+        // =====================================================
+        // 🏆 FINAL
+        // =====================================================
+        echo "=========================\n";
+        echo "🏆 RESULTADO FINAL\n";
+        echo "=========================\n\n";
+
+        echo "Tú: {$playerPoints}\n";
+        echo "IA: {$aiPoints}\n\n";
+
+        if ($playerPoints > $aiPoints) {
+            echo "🎉 HAS GANADO\n";
+        } elseif ($aiPoints > $playerPoints) {
+            echo "🤖 HA GANADO LA IA\n";
+        } else {
+            echo "🤝 EMPATE\n";
+        }
+    }
+
+    // =========================================================
+    // 🎚️ DIFICULTAD
+    // =========================================================
+    private function chooseDifficulty(): string
+    {
+        echo "🎚️ DIFICULTAD\n";
+        echo "1. Normal\n";
+        echo "2. Difícil\n\n";
+        echo "👉 ";
+
+        return trim(fgets(STDIN)) === "2" ? "hard" : "normal";
+    }
+
+    // =========================================================
+    // 🎮 PLAYER PICK
+    // =========================================================
+    private function playerPick(array $draft): Car
+    {
+        echo "\n👉 ELIGE COCHE (1-5): ";
+        $index = (int) trim(fgets(STDIN)) - 1;
+
+        return $draft[$index] ?? $draft[array_rand($draft)];
+    }
+
+    // =========================================================
+    // 🤖 IA CON AWARENESS DEL CIRCUITO
+    // =========================================================
+    private function aiPick(array $draft, Track $track, string $difficulty): Car
+    {
+        $scores = [];
+
+        foreach ($draft as $car) {
+
+            $score = 0;
+
+            foreach ($track->weights as $stat => $weight) {
+                $score += ($car->$stat ?? 0) * $weight;
+            }
+
+            $scores[] = [
+                "car" => $car,
+                "score" => $score
+            ];
+        }
+
+        usort($scores, fn($a, $b) => $b["score"] <=> $a["score"]);
+
+        if ($difficulty === "hard") {
+            return $scores[0]["car"];
+        }
+
+        // normal: sesgo probabilístico
+        $pool = [];
+
+        foreach ($scores as $i => $entry) {
+
+            $weight = match ($i) {
+                0 => 50,
+                1 => 30,
+                2 => 15,
+                default => 5
+            };
+
+            for ($j = 0; $j < $weight; $j++) {
+                $pool[] = $entry["car"];
+            }
+        }
+
+        return $pool[array_rand($pool)];
+    }
+
+    // =========================================================
+    // ⏱️ FORMATO TIEMPO
+    // =========================================================
+    private function formatTime(float $time): string
+    {
+        if ($time < 60) {
+            return number_format($time, 2) . "s";
+        }
+
+        $m = floor($time / 60);
+        $s = floor($time % 60);
+        $cs = (int)(($time - floor($time)) * 100);
+
+        return sprintf("%02d:%02d.%02d", $m, $s, $cs);
     }
 }
